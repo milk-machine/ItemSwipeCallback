@@ -7,7 +7,6 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.AppCompatDrawableManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
@@ -21,20 +20,20 @@ import android.view.View;
 public abstract class ItemSwipeCallback extends ItemTouchHelper.SimpleCallback {
     private static final String TAG = "ItemSwipeCallback";
 
-    private float mDensity;
-    private float mScaleDensity;
-    private final Drawable mRightIcon;
-    private final Drawable mLeftIcon;
+    private final float mDensity;
+    private final float mScaleDensity;
+    private Drawable mRightIcon;
+    private Drawable mLeftIcon;
     private final int mRightColor;
     private final int mLeftColor;
-    private final String mRightText;
-    private final String mLeftText;
-    private final float mHorizontalTextMarginPx;
-    private final float mTextOffsetY;
-    private final float mTextSizePx;
-    private final Paint mTextPaint;
-    private final float mHorizontalIconMarginPx;
-    private final float mIconSizePx;
+    private String mRightText;
+    private String mLeftText;
+    private float mHorizontalTextMarginPx;
+    private float mTextOffsetY;
+    private float mTextSizePx;
+    private Paint mTextPaint = null;
+    private float mHorizontalIconMarginPx;
+    private float mIconSizePx = -1;
 
     //Settings
     private int RIGHT_ICON = -1; //use only square vector drawables
@@ -50,60 +49,127 @@ public abstract class ItemSwipeCallback extends ItemTouchHelper.SimpleCallback {
     private float HORIZONTAL_MARGIN_TEXT_DP = 48f;
     private float VERTICAL_OFFSET_TEXT_DP = 1f;
 
-    //region ============================== Builder ==============================
+    //region ============================== Configurator ==============================
 
-    public static Builder configure(@NonNull Context context, int swipeDirs) {
-        return new Builder(context,0,swipeDirs);
+    public static Configurator configure(ItemSwipeCallback itemSwipeCallback) {
+        return new Configurator(itemSwipeCallback);
     }
 
-    public static class Builder {
-        private Context mContext;
-        private int mDragDirs;
-        private int mSwipeDirs;
+    public static class Configurator {
+        private ItemSwipeCallback mSwipeCallback;
 
-        public Builder(Context context, int dragDirs, int swipeDirs) {
-            mContext = context;
-            mDragDirs = dragDirs;
-            mSwipeDirs = swipeDirs;
+        private Configurator(ItemSwipeCallback swipeCallback) {
+            mSwipeCallback = swipeCallback;
+        }
+
+        public Configurator rightIcon(int resId) {
+            mSwipeCallback.setRightIcon(resId);
+            return this;
+        }
+
+        public Configurator leftIcon(int resId) {
+            mSwipeCallback.setLeftIcon(resId);
+            return this;
+        }
+
+        public Configurator rightColor(int resId) {
+            mSwipeCallback.setRightColor(resId);
+            return this;
+        }
+
+        public Configurator leftColor(int resId) {
+            mSwipeCallback.setLeftColor(resId);
+            return this;
+        }
+
+        public Configurator rightText(int resId) {
+            mSwipeCallback.setRightText(resId);
+            return this;
+        }
+
+        public Configurator leftText(int resId) {
+            mSwipeCallback.setLeftText(resId);
+            return this;
+        }
+
+        public Configurator textColor(int resId) {
+            mSwipeCallback.setTextColor(resId);
+            return this;
+        }
+
+        public Configurator textSizeSp(float sp) {
+            mSwipeCallback.setTextSizSp(sp);
+            return this;
+        }
+
+        public Configurator iconSizeDp(float dp) {
+            mSwipeCallback.setIconSizeDp(dp);
+            return this;
+        }
+
+        public Configurator iconHorizontalMarginDp(float dp) {
+            mSwipeCallback.setHorizontalMarginIconDp(dp);
+            return this;
+        }
+
+        public Configurator textHorizontalMarginDp(float dp) {
+            mSwipeCallback.setHorizontalMarginTextDp(dp);
+            return this;
+        }
+
+        public Configurator textOffsetY(float dp) {
+            mSwipeCallback.setVerticalOffsetTextDp(dp);
+            return this;
         }
 
         public ItemSwipeCallback configurate() {
-            return new ItemSwipeCallback(mContext, mDragDirs, mSwipeDirs) {
-                @Override
-                public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
-
-                }
-            };
+            return mSwipeCallback;
         }
     }
 
     //endregion
 
-    private ItemSwipeCallback(@NonNull Context context, int dragDirs, int swipeDirs) {
-        super(dragDirs, swipeDirs);
+    public ItemSwipeCallback(@NonNull Context context, int swipeDirs) {
+        super(0, swipeDirs);
 
         DisplayMetrics metrics = context.getResources().getDisplayMetrics();
         mDensity = metrics.density;
         mScaleDensity = metrics.scaledDensity;
 
-        mRightIcon = AppCompatDrawableManager.get().getDrawable(context, RIGHT_ICON);
-        mLeftIcon = AppCompatDrawableManager.get().getDrawable(context, LEFT_ICON);
         mRightColor = ContextCompat.getColor(context, RIGHT_COLOR);
         mLeftColor = ContextCompat.getColor(context, LEFT_COLOR);
-        mRightText = context.getString(RIGHT_TEXT).toUpperCase();
-        mLeftText = context.getString(LEFT_TEXT).toUpperCase();
 
-        mHorizontalTextMarginPx = dpToPx(HORIZONTAL_MARGIN_TEXT_DP);
-        mTextOffsetY = dpToPx(VERTICAL_OFFSET_TEXT_DP);
-        mTextSizePx = spToPx(TEXT_SIZE_SP);
+        if (RIGHT_ICON != -1) {
+            mRightIcon = AppCompatDrawableManager.get().getDrawable(context, RIGHT_ICON);
+        }
 
-        mTextPaint = new Paint();
-        mTextPaint.setColor(ContextCompat.getColor(context, TEXT_COLOR));
-        mTextPaint.setTextSize(mTextSizePx);
-        mTextPaint.setAntiAlias(true);
+        if (LEFT_ICON != -1) {
+            mLeftIcon = AppCompatDrawableManager.get().getDrawable(context, LEFT_ICON);
+        }
 
-        mHorizontalIconMarginPx = dpToPx(HORIZONTAL_MARGIN_ICON_DP);
-        mIconSizePx = dpToPx(ICON_SIZE_DP);
+        if (RIGHT_TEXT != -1) {
+            mRightText = context.getString(RIGHT_TEXT).toUpperCase();
+        }
+
+        if (LEFT_TEXT != -1) {
+            mLeftText = context.getString(LEFT_TEXT).toUpperCase();
+        }
+
+        if (RIGHT_TEXT != -1 || LEFT_TEXT != -1) {
+            mHorizontalTextMarginPx = dpToPx(HORIZONTAL_MARGIN_TEXT_DP);
+            mTextOffsetY = dpToPx(VERTICAL_OFFSET_TEXT_DP);
+            mTextSizePx = spToPx(TEXT_SIZE_SP);
+
+            mTextPaint = new Paint();
+            mTextPaint.setColor(ContextCompat.getColor(context, TEXT_COLOR));
+            mTextPaint.setTextSize(mTextSizePx);
+            mTextPaint.setAntiAlias(true);
+        }
+
+        if (RIGHT_ICON != -1 || LEFT_ICON != -1) {
+            mHorizontalIconMarginPx = dpToPx(HORIZONTAL_MARGIN_ICON_DP);
+            mIconSizePx = dpToPx(ICON_SIZE_DP);
+        }
     }
 
     @Override
@@ -135,18 +201,23 @@ public abstract class ItemSwipeCallback extends ItemTouchHelper.SimpleCallback {
                 c.drawColor(mLeftColor);
 
                 //drawing text
-                mTextPaint.setTextAlign(Paint.Align.LEFT);
-                int textX = (int) (itemView.getLeft() + mHorizontalTextMarginPx);
-                int textY = (int) (itemView.getTop() + itemHeightPx / 2 + mTextSizePx / 2 - mTextOffsetY);
-                c.drawText(mLeftText, textX, textY, mTextPaint);
+                if (mTextPaint != null) {
+                    mTextPaint.setTextAlign(Paint.Align.LEFT);
+                    int textX = (int) (itemView.getLeft() + mHorizontalTextMarginPx);
+                    int textY = (int) (itemView.getTop() + itemHeightPx / 2 + mTextSizePx / 2 - mTextOffsetY);
+                    c.drawText(mLeftText, textX, textY, mTextPaint);
+                }
+
 
                 //drawing icon
-                int iconLeft = (int) (itemView.getLeft() + mHorizontalIconMarginPx);
-                int iconTop = (int) (itemView.getTop() + itemHeightPx / 2 - mIconSizePx / 2);
-                int iconRight = (int) (itemView.getLeft() + mHorizontalIconMarginPx + mIconSizePx);
-                int iconBottom = (int) (itemView.getBottom() - itemHeightPx / 2 + mIconSizePx / 2);
-                mLeftIcon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
-                mLeftIcon.draw(c);
+                if (mIconSizePx != -1) {
+                    int iconLeft = (int) (itemView.getLeft() + mHorizontalIconMarginPx);
+                    int iconTop = (int) (itemView.getTop() + itemHeightPx / 2 - mIconSizePx / 2);
+                    int iconRight = (int) (itemView.getLeft() + mHorizontalIconMarginPx + mIconSizePx);
+                    int iconBottom = (int) (itemView.getBottom() - itemHeightPx / 2 + mIconSizePx / 2);
+                    mLeftIcon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
+                    mLeftIcon.draw(c);
+                }
 
             } else {
                 //swipe to left
@@ -161,18 +232,22 @@ public abstract class ItemSwipeCallback extends ItemTouchHelper.SimpleCallback {
                 c.drawColor(mRightColor);
 
                 //drawing text
-                mTextPaint.setTextAlign(Paint.Align.RIGHT);
-                int textX = (int) (itemView.getRight() - mHorizontalTextMarginPx);
-                int textY = (int) (itemView.getTop() + itemHeightPx / 2 + mTextSizePx / 2 - mTextOffsetY);
-                c.drawText(mRightText, textX, textY, mTextPaint);
+                if (mTextPaint != null) {
+                    mTextPaint.setTextAlign(Paint.Align.RIGHT);
+                    int textX = (int) (itemView.getRight() - mHorizontalTextMarginPx);
+                    int textY = (int) (itemView.getTop() + itemHeightPx / 2 + mTextSizePx / 2 - mTextOffsetY);
+                    c.drawText(mRightText, textX, textY, mTextPaint);
+                }
 
                 //drawing icon
-                int iconLeft = (int) (itemView.getRight() - mHorizontalIconMarginPx - mIconSizePx);
-                int iconTop = (int) (itemView.getTop() + itemHeightPx / 2 - mIconSizePx / 2);
-                int iconRight = (int) (itemView.getRight() - mHorizontalIconMarginPx);
-                int iconBottom = (int) (itemView.getBottom() - itemHeightPx / 2 + mIconSizePx / 2);
-                mRightIcon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
-                mRightIcon.draw(c);
+                if (mIconSizePx != -1) {
+                    int iconLeft = (int) (itemView.getRight() - mHorizontalIconMarginPx - mIconSizePx);
+                    int iconTop = (int) (itemView.getTop() + itemHeightPx / 2 - mIconSizePx / 2);
+                    int iconRight = (int) (itemView.getRight() - mHorizontalIconMarginPx);
+                    int iconBottom = (int) (itemView.getBottom() - itemHeightPx / 2 + mIconSizePx / 2);
+                    mRightIcon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
+                    mRightIcon.draw(c);
+                }
             }
         }
 
@@ -186,4 +261,57 @@ public abstract class ItemSwipeCallback extends ItemTouchHelper.SimpleCallback {
     private float spToPx(float sp) {
         return sp * mScaleDensity;
     }
+
+    //region ============================== Getters and Setters ==============================
+
+    private void setRightIcon(int resId) {
+        this.RIGHT_ICON = resId;
+    }
+
+    private void setLeftIcon(int resId) {
+        this.LEFT_ICON = resId;
+    }
+
+    private void setRightColor(int resId) {
+        this.RIGHT_COLOR = resId;
+    }
+
+    private void setLeftColor(int resId) {
+        this.LEFT_COLOR = resId;
+    }
+
+    private void setRightText(int resId) {
+        this.RIGHT_TEXT = resId;
+    }
+
+    private void setLeftText(int resId) {
+        this.LEFT_TEXT = resId;
+    }
+
+    private void setTextColor(int resId) {
+        this.TEXT_COLOR = resId;
+    }
+
+    private void setTextSizSp(float TEXT_SIZE_SP) {
+        this.TEXT_SIZE_SP = TEXT_SIZE_SP;
+    }
+
+    private void setIconSizeDp(float ICON_SIZE_DP) {
+        this.ICON_SIZE_DP = ICON_SIZE_DP;
+    }
+
+    private void setHorizontalMarginIconDp(float HORIZONTAL_MARGIN_ICON_DP) {
+        this.HORIZONTAL_MARGIN_ICON_DP = HORIZONTAL_MARGIN_ICON_DP;
+    }
+
+    private void setHorizontalMarginTextDp(float HORIZONTAL_MARGIN_TEXT_DP) {
+        this.HORIZONTAL_MARGIN_TEXT_DP = HORIZONTAL_MARGIN_TEXT_DP;
+    }
+
+    private void setVerticalOffsetTextDp(float VERTICAL_OFFSET_TEXT_DP) {
+        this.VERTICAL_OFFSET_TEXT_DP = VERTICAL_OFFSET_TEXT_DP;
+    }
+
+
+    //endregion
 }
